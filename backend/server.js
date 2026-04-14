@@ -10,17 +10,36 @@ dotenv.config();
 
 const app = express();
 const server = http.createServer(app);
+// Define your allowed origins in an array
+const allowedOrigins = [
+  process.env.FRONTEND_URL,          // Your Render URL
+  'http://localhost:3000',           // Your Local URL
+];
+
+// 1. Update Socket.io CORS
 const io = new Server(server, {
   cors: {
-    origin: process.env.FRONTEND_URL,
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     methods: ['GET', 'POST'],
     credentials: true,
   },
 });
 
-// Middleware
+// 2. Update Express Middleware CORS
 app.use(cors({
-  origin: process.env.FRONTEND_URL,
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
 }));
 app.use(express.json());
