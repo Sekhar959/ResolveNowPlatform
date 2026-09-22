@@ -89,7 +89,7 @@ export default function RegisterPage() {
             <div className="form-row">
               <div className="form-group">
                 <label className="form-label" style={{ color: 'rgba(255,255,255,.65)' }}>Password</label>
-                <input className="form-control" name="password" type="password" value={form.password} onChange={handleChange} placeholder="Min 6 characters" required style={{ background: 'rgba(255,255,255,.08)', border: '1px solid rgba(255,255,255,.12)', color: '#fff' }} />
+                <input className="form-control" name="password" type="password" value={form.password} onChange={handleChange} placeholder="Min 8 characters" required style={{ background: 'rgba(255,255,255,.08)', border: '1px solid rgba(255,255,255,.12)', color: '#fff' }} />
               </div>
               <div className="form-group">
                 <label className="form-label" style={{ color: 'rgba(255,255,255,.65)' }}>Confirm Password</label>

@@ -12,8 +12,8 @@ const app = express();
 const server = http.createServer(app);
 // Define your allowed origins in an array
 const allowedOrigins = [
-  process.env.FRONTEND_URL,          // Your Render URL
-  'http://localhost:3000',           // Your Local URL
+  process.env.FRONTEND_URL,        // Render frontend
+  "http://localhost:3000"          // Local frontend
 ];
 
 // 1. Update Socket.io CORS
@@ -32,16 +32,6 @@ const io = new Server(server, {
 });
 
 // 2. Update Express Middleware CORS
-// app.use(cors({
-//   origin: (origin, callback) => {
-//     if (!origin || allowedOrigins.includes(origin)) {
-//       callback(null, true);
-//     } else {
-//       callback(new Error('Not allowed by CORS'));
-//     }
-//   },
-//   credentials: true,
-// }));
 app.use(cors({
   origin: (origin, callback) => {
     if (!origin || allowedOrigins.includes(origin)) {
