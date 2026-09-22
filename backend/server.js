@@ -11,15 +11,46 @@ dotenv.config();
 const app = express();
 const server = http.createServer(app);
 // Define your allowed origins in an array
+// const allowedOrigins = [
+//   process.env.FRONTEND_URL,        // Render frontend
+//   "http://localhost:3000"          // Local frontend
+// ];
+// console.log("Allowed CORS origins:", allowedOrigins);
+
 const allowedOrigins = [
-  process.env.FRONTEND_URL,        // Render frontend
-  "http://localhost:3000"          // Local frontend
-];
+  process.env.FRONTEND_URL,
+  "http://localhost:3000"
+].filter(Boolean);
+
+console.log("Allowed CORS origins:", allowedOrigins);
+
+const corsOptions = {
+  origin: (origin, callback) => {
+    console.log("Incoming request origin:", origin);
+
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.log("❌ CORS blocked:", origin);
+      callback(new Error(`Not allowed by CORS: ${origin}`));
+    }
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+};
+
+// Express CORS
+app.use(cors(corsOptions));
+
+// Handle preflight requests
+app.options("*", cors(corsOptions));
 
 // 1. Update Socket.io CORS
 const io = new Server(server, {
   cors: {
     origin: (origin, callback) => {
+          console.log("Incoming origin:", origin);
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
