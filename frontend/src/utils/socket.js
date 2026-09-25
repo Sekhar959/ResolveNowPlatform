@@ -7,10 +7,12 @@ export const initSocket = (token) => {
 
   socket = io(process.env.REACT_APP_SOCKET_URL, {
     auth: { token },
-    transports: ['websocket', 'polling'],
-    reconnection: true,
-    reconnectionAttempts: 5,
-    reconnectionDelay: 1000,
+   transports: ['polling', 'websocket'],
+upgrade: true,
+reconnection: true,
+reconnectionAttempts: Infinity,
+reconnectionDelay: 1000,
+reconnectionDelayMax: 5000,
   });
 
   socket.on('connect', () => console.log('✅ Socket connected:', socket.id));
