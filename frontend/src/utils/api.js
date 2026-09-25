@@ -43,8 +43,12 @@ export const complaintAPI = {
   create: (formData) => API.post('/complaints', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
   getAll: (params) => API.get('/complaints', { params }),
   getOne: (id) => API.get(`/complaints/${id}`),
-  update: (id, data) => API.put(`/complaints/${id}`, data),
-  assign: (id, agentId) => API.put(`/complaints/${id}/assign`, { agentId }),
+update: (id, data) =>
+  API.put(`/complaints/${id}`, data, {
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    }
+  }),  assign: (id, agentId) => API.put(`/complaints/${id}/assign`, { agentId }),
   delete: (id) => API.delete(`/complaints/${id}`),
   submitFeedback: (id, data) => API.post(`/complaints/${id}/feedback`, data),
 };

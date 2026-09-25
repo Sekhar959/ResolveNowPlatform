@@ -166,34 +166,158 @@ export default function AnalyticsPage() {
       {/* Agent table */}
       {agentPerf.length > 0 && (
         <div className="card">
-          <div className="card-header"><span className="card-title">Agent Leaderboard</span></div>
-          <div className="table-wrap">
+<div className="card-header">
+  <span className="card-title">Agent Performance</span>
+</div>          <div className="table-wrap">
             <table>
               <thead>
-                <tr><th>Rank</th><th>Agent</th><th>Assigned</th><th>Resolved</th><th>Pending</th><th>Rate</th><th>Avg Time</th></tr>
-              </thead>
+<tr>
+  <th>Agent</th>
+  <th>Assigned</th>
+  <th>Resolved</th>
+  <th>In Progress</th>
+  <th>Resolution Rate</th>
+  <th>Avg Time</th>
+  <th>User Rating</th>
+</tr>              </thead>
               <tbody>
-                {[...agentPerf].sort((a, b) => b.resolutionRate - a.resolutionRate).map((a, i) => (
-                  <tr key={a.agentId}>
-                    <td>
-                      <span style={{ fontWeight: 700, fontSize: 14 }}>{i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i + 1}`}</span>
-                    </td>
-                    <td style={{ fontWeight: 600 }}>{a.name}</td>
-                    <td>{a.assigned}</td>
-                    <td style={{ color: '#22C55E', fontWeight: 600 }}>{a.resolved}</td>
-                    <td style={{ color: '#F59E0B' }}>{a.inprogress}</td>
-                    <td>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <div style={{ flex: 1, height: 5, background: '#E2E8F0', borderRadius: 4, minWidth: 60 }}>
-                          <div style={{ height: '100%', width: `${a.resolutionRate}%`, background: '#22C55E', borderRadius: 4 }} />
-                        </div>
-                        <span style={{ fontSize: 12, fontWeight: 600 }}>{a.resolutionRate}%</span>
-                      </div>
-                    </td>
-                    <td style={{ fontSize: 12 }}>{a.avgResolutionDays}d</td>
-                  </tr>
-                ))}
-              </tbody>
+  {agentPerf.map((a) => (
+    <tr key={a.agentId}>
+
+      {/* Agent */}
+      <td>
+        <div style={{ fontWeight: 600 }}>
+          {a.name}
+        </div>
+
+        <div
+          style={{
+            fontSize: 11,
+            color: '#64748B',
+            marginTop: 2
+          }}
+        >
+          {a.email}
+        </div>
+      </td>
+
+      {/* Assigned */}
+      <td>
+        {a.assigned}
+      </td>
+
+      {/* Resolved */}
+      <td
+        style={{
+          color: '#22C55E',
+          fontWeight: 600
+        }}
+      >
+        {a.resolved}
+      </td>
+
+      {/* In Progress */}
+      <td
+        style={{
+          color: '#F59E0B'
+        }}
+      >
+        {a.inprogress}
+      </td>
+
+      {/* Resolution Rate */}
+      <td>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8
+          }}
+        >
+          <div
+            style={{
+              flex: 1,
+              height: 5,
+              background: '#E2E8F0',
+              borderRadius: 4,
+              minWidth: 60
+            }}
+          >
+            <div
+              style={{
+                height: '100%',
+                width: `${a.resolutionRate}%`,
+                background: '#22C55E',
+                borderRadius: 4
+              }}
+            />
+          </div>
+
+          <span
+            style={{
+              fontSize: 12,
+              fontWeight: 600
+            }}
+          >
+            {a.resolutionRate}%
+          </span>
+        </div>
+      </td>
+
+      {/* Average Resolution Time */}
+      <td
+        style={{
+          fontSize: 12
+        }}
+      >
+        {a.avgResolutionDays}d
+      </td>
+
+      {/* User Rating */}
+      <td>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6
+          }}
+        >
+          <span
+            style={{
+              fontSize: 14,
+              fontWeight: 700
+            }}
+          >
+            {a.avgRating > 0 ? a.avgRating.toFixed(1) : '—'}
+          </span>
+
+          {a.avgRating > 0 && (
+            <span
+              style={{
+                fontSize: 13,
+                letterSpacing: 1
+              }}
+            >
+              ★
+            </span>
+          )}
+        </div>
+
+        <div
+          style={{
+            fontSize: 11,
+            color: '#64748B',
+            marginTop: 3
+          }}
+        >
+          {a.totalRatings} rating
+          {a.totalRatings !== 1 ? 's' : ''}
+        </div>
+      </td>
+
+    </tr>
+  ))}
+</tbody>
             </table>
           </div>
         </div>

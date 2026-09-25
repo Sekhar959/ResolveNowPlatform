@@ -73,6 +73,15 @@ const complaintSchema = new mongoose.Schema({
     type: Date,
     default: null,
   },
+  resolutionProofUrl: {
+  type: String,
+  default: '',
+},
+
+resolutionProofPublicId: {
+  type: String,
+  default: '',
+},
 }, { timestamps: true });
 
 // Auto-generate complaintId before save

@@ -139,20 +139,67 @@ exports.getComplaint = async (req, res) => {
 };
 
 // @PUT /api/complaints/:id
+// @PUT /api/complaints/:id
 exports.updateComplaint = async (req, res) => {
   try {
-    const { status, note, title, description, priority } = req.body;
-    const complaint = await Complaint.findById(req.params.id).populate('submittedBy', 'name email');
+    const {
+      status,
+      note,
+      title,
+      description,
+      priority
+    } = req.body;
 
-    if (!complaint) return res.status(404).json({ success: false, message: 'Complaint not found.' });
+    const complaint = await Complaint.findById(req.params.id)
+      .populate('submittedBy', 'name email');
+
+    if (!complaint) {
+      return res.status(404).json({
+        success: false,
+        message: 'Complaint not found.'
+      });
+    }
 
     // Only admin/agent can update status
     if (status && ['agent', 'admin'].includes(req.user.role)) {
-      complaint.statusHistory.push({ status, changedBy: req.user._id, note: note || '' });
-      complaint.status = status;
-      if (status === 'resolved') complaint.resolvedAt = new Date();
 
-      // Notify the user who submitted
+      /*
+       * Proof of completion is required when
+       * changing the complaint to RESOLVED.
+       */
+      if (
+        status === 'resolved' &&
+        !req.file &&
+        !complaint.resolutionProofUrl
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: 'Proof of completion image is required when resolving a complaint.'
+        });
+      }
+
+      // Save resolution proof image
+      if (req.file) {
+        complaint.resolutionProofUrl = req.file.path;
+        complaint.resolutionProofPublicId = req.file.filename;
+      }
+
+      // Add status history
+      complaint.statusHistory.push({
+        status,
+        changedBy: req.user._id,
+        note: note || ''
+      });
+
+      // Update status
+      complaint.status = status;
+
+      // Set resolved time
+      if (status === 'resolved') {
+        complaint.resolvedAt = new Date();
+      }
+
+      // Notify the user who submitted the complaint
       await createNotification(
         complaint.submittedBy._id,
         'complaint_updated',
@@ -161,26 +208,84 @@ exports.updateComplaint = async (req, res) => {
         complaint._id
       );
 
-      // Email notification
-      const emailData = emailTemplates.statusUpdated(complaint, complaint.submittedBy);
-      await sendEmail({ to: complaint.submittedBy.email, ...emailData });
+      // Send email notification
+      const emailData = emailTemplates.statusUpdated(
+        complaint,
+        complaint.submittedBy
+      );
 
-      // Emit real-time event
+      await sendEmail({
+        to: complaint.submittedBy.email,
+        ...emailData
+      });
+
+      // Real-time update
       const io = req.app.get('io');
+
       if (io) {
-        io.emit('complaintUpdated', { complaintId: complaint._id, status, updatedBy: req.user.name });
-        io.to(`complaint_${complaint._id}`).emit('statusChanged', { status, note });
+        io.emit('complaintUpdated', {
+          complaintId: complaint._id,
+          status,
+          updatedBy: req.user.name
+        });
+
+        io.to(`complaint_${complaint._id}`).emit(
+          'statusChanged',
+          {
+            status,
+            note,
+            resolutionProofUrl: complaint.resolutionProofUrl || null
+          }
+        );
       }
     }
 
-    if (title && req.user.role === 'admin') complaint.title = title;
-    if (description && req.user.role === 'admin') complaint.description = description;
-    if (priority && ['agent', 'admin'].includes(req.user.role)) complaint.priority = priority;
+    // Admin can edit title
+    if (title && req.user.role === 'admin') {
+      complaint.title = title;
+    }
 
+    // Admin can edit description
+    if (description && req.user.role === 'admin') {
+      complaint.description = description;
+    }
+
+    // Agent/Admin can change priority
+    if (
+      priority &&
+      ['agent', 'admin'].includes(req.user.role)
+    ) {
+      complaint.priority = priority;
+    }
+
+  
     await complaint.save();
-    res.json({ success: true, message: 'Complaint updated.', complaint });
+
+const emailData = emailTemplates.statusUpdated(
+  complaint,
+  complaint.submittedBy
+);
+
+const emailResult = await sendEmail({
+  to: complaint.submittedBy.email,
+  ...emailData,
+});
+
+console.log('Status email result:', emailResult);
+
+    res.json({
+      success: true,
+      message: 'Complaint updated successfully.',
+      complaint
+    });
+
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    console.error('Update complaint error:', err);
+
+    res.status(500).json({
+      success: false,
+      message: err.message
+    });
   }
 };
 

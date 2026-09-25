@@ -12,9 +12,11 @@ export default function ComplaintDetailPage() {
   const navigate = useNavigate();
   const [complaint, setComplaint] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [statusNote, setStatusNote] = useState('');
-  const [newStatus, setNewStatus] = useState('');
-  const [updating, setUpdating] = useState(false);
+ const [statusNote, setStatusNote] = useState('');
+const [newStatus, setNewStatus] = useState('');
+const [resolutionProof, setResolutionProof] = useState(null);
+const [resolutionProofPreview, setResolutionProofPreview] = useState('');
+const [updating, setUpdating] = useState(false);
   const [feedback, setFeedback] = useState({ rating: 0, comment: '' });
   const [submittingFeedback, setSubmittingFeedback] = useState(false);
 
@@ -45,17 +47,78 @@ export default function ComplaintDetailPage() {
     return () => { socket.off('complaintUpdated', handler); socket.off('statusChanged'); };
   }, [id, complaint?._id]);
 
-  const handleUpdateStatus = async () => {
-    setUpdating(true);
-    try {
-      await complaintAPI.update(id, { status: newStatus, note: statusNote });
-      addToast('Status updated successfully!', 'success');
-      setStatusNote('');
-      fetchComplaint();
-    } catch (e) { addToast(e.response?.data?.message || 'Update failed', 'error'); }
-    finally { setUpdating(false); }
-  };
+  const handleResolutionProof = (file) => {
+  if (!file) return;
 
+  if (!file.type.startsWith('image/')) {
+    addToast('Please upload an image file.', 'error');
+    return;
+  }
+
+  if (file.size > 10 * 1024 * 1024) {
+    addToast('Proof image must be under 10MB.', 'error');
+    return;
+  }
+
+  setResolutionProof(file);
+  setResolutionProofPreview(URL.createObjectURL(file));
+};
+
+  const handleUpdateStatus = async () => {
+
+  // Proof required when resolving
+  if (
+    newStatus === 'resolved' &&
+    !resolutionProof &&
+    !complaint.resolutionProofUrl
+  ) {
+    addToast(
+      'Please upload proof of completion before resolving this complaint.',
+      'error'
+    );
+    return;
+  }
+
+  setUpdating(true);
+
+  try {
+    const formData = new FormData();
+
+    formData.append('status', newStatus);
+    formData.append('note', statusNote);
+
+    if (resolutionProof) {
+      formData.append(
+        'resolutionProof',
+        resolutionProof
+      );
+    }
+
+    await complaintAPI.update(id, formData);
+
+    addToast(
+      'Complaint status updated successfully!',
+      'success'
+    );
+
+    setStatusNote('');
+    setResolutionProof(null);
+    setResolutionProofPreview('');
+
+    await fetchComplaint();
+
+  } catch (e) {
+
+    addToast(
+      e.response?.data?.message ||
+      'Update failed',
+      'error'
+    );
+
+  } finally {
+    setUpdating(false);
+  }
+};
   const handleFeedback = async () => {
     if (!feedback.rating) { addToast('Please select a rating', 'warning'); return; }
     setSubmittingFeedback(true);
@@ -146,6 +209,61 @@ export default function ComplaintDetailPage() {
             </div>
           )}
 
+          {/* Resolution Proof */}
+{complaint.resolutionProofUrl && (
+  <div
+    className="card"
+    style={{ marginBottom: 16 }}
+  >
+    <div className="card-header">
+      <span className="card-title">
+        Proof of Completion
+      </span>
+    </div>
+
+    <div style={{ padding: 16 }}>
+
+      <img
+        src={complaint.resolutionProofUrl}
+        alt="Proof of completion"
+        style={{
+          width: '100%',
+          maxHeight: 400,
+          objectFit: 'contain',
+          borderRadius: 8,
+          border: '1px solid #E2E8F0',
+          background: '#F8FAFC'
+        }}
+      />
+
+      <p
+        style={{
+          fontSize: 11,
+          color: '#64748B',
+          marginTop: 8
+        }}
+      >
+        Resolution proof uploaded by the
+        assigned agent/admin.
+      </p>
+
+      <a
+        href={complaint.resolutionProofUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="btn btn-secondary btn-sm"
+        style={{
+          marginTop: 8,
+          display: 'inline-flex'
+        }}
+      >
+        View Full Image
+      </a>
+
+    </div>
+  </div>
+)}
+
           {/* Feedback (user only, resolved) */}
           {user.role === 'user' && complaint.status === 'resolved' && (
             complaint.feedback?.rating ? (
@@ -197,6 +315,116 @@ export default function ComplaintDetailPage() {
                   <label className="form-label">Note (optional)</label>
                   <textarea className="form-control" value={statusNote} onChange={e => setStatusNote(e.target.value)} placeholder="Add a note about this status change..." style={{ minHeight: 80 }} />
                 </div>
+                {/* Resolution Proof */}
+{newStatus === 'resolved' && (
+  <div className="form-group">
+
+    <label className="form-label">
+      Proof of Completion *
+    </label>
+
+    {resolutionProofPreview ? (
+      <div
+        style={{
+          position: 'relative',
+          display: 'inline-block',
+          width: '100%'
+        }}
+      >
+        <img
+          src={resolutionProofPreview}
+          alt="Resolution proof preview"
+          style={{
+            width: '100%',
+            maxHeight: 220,
+            objectFit: 'cover',
+            borderRadius: 8,
+            border: '1px solid #E2E8F0'
+          }}
+        />
+
+        <button
+          type="button"
+          onClick={() => {
+            setResolutionProof(null);
+            setResolutionProofPreview('');
+          }}
+          style={{
+            position: 'absolute',
+            top: 8,
+            right: 8,
+            width: 28,
+            height: 28,
+            borderRadius: '50%',
+            background: '#EF4444',
+            color: '#fff',
+            border: 'none',
+            cursor: 'pointer',
+            fontSize: 16
+          }}
+        >
+          ×
+        </button>
+      </div>
+    ) : (
+      <div
+        className="upload-area"
+        onClick={() =>
+          document
+            .getElementById('resolutionProofInput')
+            .click()
+        }
+      >
+        <div
+          style={{
+            fontSize: 28,
+            marginBottom: 8
+          }}
+        >
+          📤
+        </div>
+
+        <p style={{ fontSize: 13 }}>
+          Click to upload proof of completion
+        </p>
+
+        <p
+          style={{
+            fontSize: 11,
+            marginTop: 4,
+            color: '#94A3B8'
+          }}
+        >
+          PNG, JPG, WEBP – Max 10MB
+        </p>
+
+        <input
+          id="resolutionProofInput"
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          style={{ display: 'none' }}
+          onChange={e =>
+            handleResolutionProof(
+              e.target.files[0]
+            )
+          }
+        />
+      </div>
+    )}
+
+    <small
+      style={{
+        display: 'block',
+        marginTop: 6,
+        color: '#64748B',
+        fontSize: 11
+      }}
+    >
+      Upload a photo showing that the complaint has been resolved.
+    </small>
+
+  </div>
+)}
                 <button className="btn btn-primary" onClick={handleUpdateStatus} disabled={updating || newStatus === complaint.status} style={{ width: '100%', justifyContent: 'center' }}>
                   {updating ? 'Updating...' : 'Update Status'}
                 </button>

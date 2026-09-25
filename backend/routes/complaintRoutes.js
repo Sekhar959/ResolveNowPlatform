@@ -15,8 +15,13 @@ const { upload } = require('../config/cloudinary');
 router.post('/', protect, upload.single('image'), createComplaint);
 router.get('/', protect, getComplaints);
 router.get('/:id', protect, getComplaint);
-router.put('/:id', protect, authorize('agent', 'admin'), updateComplaint);
-router.put('/:id/assign', protect, authorize('admin'), assignComplaint);
+router.put(
+  '/:id',
+  protect,
+  authorize('agent', 'admin'),
+  upload.single('resolutionProof'),
+  updateComplaint
+);router.put('/:id/assign', protect, authorize('admin'), assignComplaint);
 router.delete('/:id', protect, authorize('admin'), deleteComplaint);
 router.post('/:id/feedback', protect, authorize('user'), submitFeedback);
 

@@ -48,13 +48,51 @@ exports.getAgents = async (req, res) => {
 exports.createAgent = async (req, res) => {
   try {
     const { name, email, password, phone } = req.body;
-    const existing = await User.findOne({ email });
-    if (existing) return res.status(400).json({ success: false, message: 'Email already exists.' });
 
-    const agent = await User.create({ name, email, password, phone, role: 'agent' });
-    res.status(201).json({ success: true, message: 'Agent created.', agent: { _id: agent._id, name: agent.name, email: agent.email, role: agent.role } });
+    const passwordRegex =
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+
+    if (!passwordRegex.test(password)) {
+      return res.status(400).json({
+        success: false,
+        message:
+          'Password must be at least 8 characters and include uppercase, lowercase, number, and special character.'
+      });
+    }
+
+    const existing = await User.findOne({ email });
+
+    if (existing) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email already exists.'
+      });
+    }
+
+    const agent = await User.create({
+      name,
+      email,
+      password,
+      phone,
+      role: 'agent'
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'Agent created.',
+      agent: {
+        _id: agent._id,
+        name: agent.name,
+        email: agent.email,
+        role: agent.role
+      }
+    });
+
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    res.status(500).json({
+      success: false,
+      message: err.message
+    });
   }
 };
 

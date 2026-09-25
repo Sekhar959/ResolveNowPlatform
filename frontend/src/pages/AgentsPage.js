@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { userAPI, complaintAPI } from '../utils/api';
 import { useToast } from '../context/ToastContext';
+const passwordRegex =
+  /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
 
 export default function AgentsPage() {
   const { addToast } = useToast();
@@ -28,18 +30,51 @@ export default function AgentsPage() {
 
   useEffect(() => { fetchData(); }, []);
 
-  const handleCreateAgent = async (e) => {
-    e.preventDefault();
-    setCreating(true);
-    try {
-      await userAPI.createAgent(newAgent);
-      addToast('Agent created successfully!', 'success');
-      setShowAddModal(false);
-      setNewAgent({ name: '', email: '', password: '', phone: '' });
-      fetchData();
-    } catch (err) { addToast(err.response?.data?.message || 'Failed to create agent', 'error'); }
-    finally { setCreating(false); }
-  };
+  // const handleCreateAgent = async (e) => {
+  //   e.preventDefault();
+  //   setCreating(true);
+  //   try {
+  //     await userAPI.createAgent(newAgent);
+  //     addToast('Agent created successfully!', 'success');
+  //     setShowAddModal(false);
+  //     setNewAgent({ name: '', email: '', password: '', phone: '' });
+  //     fetchData();
+  //   } catch (err) { addToast(err.response?.data?.message || 'Failed to create agent', 'error'); }
+  //   finally { setCreating(false); }
+  // };
+const handleCreateAgent = async (e) => {
+  e.preventDefault();
+
+  if (!passwordRegex.test(newAgent.password)) {
+    addToast(
+      'Password must be at least 8 characters and include uppercase, lowercase, number, and special character.',
+      'error'
+    );
+    return;
+  }
+
+  setCreating(true);
+
+  try {
+    await userAPI.createAgent(newAgent);
+    addToast('Agent created successfully!', 'success');
+    setShowAddModal(false);
+    setNewAgent({
+      name: '',
+      email: '',
+      password: '',
+      phone: ''
+    });
+    fetchData();
+  } catch (err) {
+    addToast(
+      err.response?.data?.message || 'Failed to create agent',
+      'error'
+    );
+  } finally {
+    setCreating(false);
+  }
+};
 
   const handleAssign = async () => {
     if (!selectedAgent) return;
@@ -163,10 +198,36 @@ export default function AgentsPage() {
                 <label className="form-label">Phone</label>
                 <input className="form-control" value={newAgent.phone} onChange={e => setNewAgent(a => ({ ...a, phone: e.target.value }))} placeholder="+91 98765 43210" />
               </div>
-              <div className="form-group">
-                <label className="form-label">Password *</label>
-                <input className="form-control" type="password" value={newAgent.password} onChange={e => setNewAgent(a => ({ ...a, password: e.target.value }))} placeholder="Min 6 characters" required minLength={6} />
-              </div>
+             <div className="form-group">
+  <label className="form-label">Password *</label>
+
+  <input
+    className="form-control"
+    type="password"
+    value={newAgent.password}
+    onChange={e =>
+      setNewAgent(a => ({
+        ...a,
+        password: e.target.value
+      }))
+    }
+    placeholder="Enter a strong password"
+    required
+    minLength={8}
+    pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).{8,}"
+    title="Password must be at least 8 characters and include uppercase, lowercase, number, and special character."
+    autoComplete="new-password"
+  />
+
+  <small style={{
+    display: 'block',
+    marginTop: 6,
+    color: '#64748B',
+    fontSize: 11
+  }}>
+    Minimum 8 characters with uppercase, lowercase, number and special character.
+  </small>
+</div>
               <div className="modal-footer">
                 <button type="button" className="btn btn-secondary" onClick={() => setShowAddModal(false)}>Cancel</button>
                 <button type="submit" className="btn btn-primary" disabled={creating}>{creating ? 'Creating...' : 'Create Agent'}</button>
